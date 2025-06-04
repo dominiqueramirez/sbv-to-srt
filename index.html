@@ -3,44 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <title>SBV to SRT Converter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
+    body {
+      background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 6px 32px rgba(60, 72, 88, 0.15);
+      padding: 32px 28px 24px 28px;
+      max-width: 420px;
+      width: 100%;
+      margin: 32px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-size: 1.6em;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: #2d3a4a;
+      letter-spacing: 0.5px;
+    }
     #drop-area {
-      border: 2px dashed #888;
-      padding: 20px;
+      border: 2px dashed #7c3aed;
+      border-radius: 12px;
+      padding: 28px 12px;
       text-align: center;
-      margin-bottom: 20px;
-      background: #fafafa;
+      margin-bottom: 18px;
+      background: #f3f0ff;
+      transition: background 0.2s, border-color 0.2s;
+      width: 100%;
+      box-sizing: border-box;
     }
     #drop-area.dragover {
-      border-color: #007acc;
-      background: #e6f7ff;
+      border-color: #2563eb;
+      background: #e0e7ff;
     }
-    #output-area { margin-bottom: 20px; }
+    #fileSelect {
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    #fileSelect:hover {
+      background: #5b21b6;
+    }
+    #output-area {
+      width: 100%;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
     #srtOutput {
       width: 100%;
-      font-family: monospace;
+      font-family: 'Fira Mono', 'Consolas', monospace;
       font-size: 1em;
       margin-bottom: 10px;
-      height: 200px;
+      height: 160px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      padding: 10px;
+      background: #f8fafc;
+      resize: vertical;
+      box-sizing: border-box;
+      color: #2d3a4a;
     }
-    button { padding: 8px 16px; font-size: 1em; }
-    #error { color: red; }
+    #saveBtn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 2px;
+      align-self: flex-end;
+    }
+    #saveBtn:disabled {
+      background: #a5b4fc;
+      cursor: not-allowed;
+    }
+    #saveBtn:not(:disabled):hover {
+      background: #1e40af;
+    }
+    #error {
+      color: #dc2626;
+      font-size: 0.98em;
+      margin-top: 8px;
+      min-height: 22px;
+      text-align: center;
+    }
+    @media (max-width: 500px) {
+      .container {
+        padding: 16px 4vw 12px 4vw;
+        max-width: 98vw;
+      }
+      #srtOutput {
+        font-size: 0.98em;
+        height: 110px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>SBV to SRT Converter</h1>
-  <div id="drop-area">
-    <p>Drag & drop your SBV file here, or</p>
-    <input type="file" id="fileElem" accept=".sbv" style="display:none">
-    <button id="fileSelect">Select SBV File</button>
+  <div class="container">
+    <h1>SBV to SRT Converter</h1>
+    <div id="drop-area">
+      <p style="margin:0 0 8px 0;">Drag & drop your <b>SBV</b> file here,<br>or</p>
+      <input type="file" id="fileElem" accept=".sbv" style="display:none">
+      <button id="fileSelect">Select SBV File</button>
+    </div>
+    <div id="output-area">
+      <textarea id="srtOutput" readonly placeholder="Converted SRT will appear here..."></textarea>
+      <button id="saveBtn" disabled>Save As...</button>
+    </div>
+    <div id="error"></div>
   </div>
-  <div id="output-area">
-    <textarea id="srtOutput" readonly placeholder="Converted SRT will appear here..."></textarea>
-    <br>
-    <button id="saveBtn" disabled>Save As...</button>
-  </div>
-  <div id="error"></div>
   <script>
     const dropArea = document.getElementById('drop-area');
     const fileElem = document.getElementById('fileElem');
