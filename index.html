@@ -1,1 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SBV to SRT Converter</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    #drop-area {
+      border: 2px dashed #888;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      background: #fafafa;
+    }
+    #drop-area.dragover {
+      border-color: #007acc;
+      background: #e6f7ff;
+    }
+    #output-area { margin-bottom: 20px; }
+    #srtOutput {
+      width: 100%;
+      font-family: monospace;
+      font-size: 1em;
+      margin-bottom: 10px;
+      height: 200px;
+    }
+    button { padding: 8px 16px; font-size: 1em; }
+    #error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>SBV to SRT Converter</h1>
+  <div id="drop-area">
+    <p>Drag & drop your SBV file here, or</p>
+    <input type="file" id="fileElem" accept=".sbv" style="display:none">
+    <button id="fileSelect">Select SBV File</button>
+  </div>
+  <div id="output-area">
+    <textarea id="srtOutput" readonly placeholder="Converted SRT will appear here..."></textarea>
+    <br>
+    <button id="saveBtn" disabled>Save As...</button>
+  </div>
+  <div id="error"></div>
+  <script>
+    const dropArea = document.getElementById('drop-area');
+    const fileElem = document.getElementById('fileElem');
+    const fileSelect = document.getElementById('fileSelect');
+    const srtOutput = document.getElementById('srtOutput');
+    const saveBtn = document.getElementById('saveBtn');
+    const errorDiv = document.getElementById('error');
 
+    fileSelect.addEventListener('click', () => fileElem.click());
+
+    fileElem.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    dropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropArea.classList.add('dragover');
+    });
+
+    dropArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropArea.classList.remove('dragover');
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropArea.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const blob = new Blob([srtOutput.value], {type: 'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'converted.srt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    function handleFiles(files) {
+      errorDiv.textContent = '';
+      if (files.length === 0) return;
+      const file = files[0];
+      if (!file.name.endsWith('.sbv')) {
+        errorDiv.textContent = 'Please select a valid SBV file.';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const srt = sbvToSrt(e.target.result);
+          srtOutput.value = srt;
+          saveBtn.disabled = false;
+        } catch (err) {
+          errorDiv.textContent = 'Error parsing SBV file: ' + err.message;
+          srtOutput.value = '';
+          saveBtn.disabled = true;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function sbvToSrt(sbvText) {
+      const blocks = sbvText.split(/\r?\n\r?\n/).filter(Boolean);
+      let srt = '';
+      let idx = 1;
+      for (const block of blocks) {
+        const lines = block.split(/\r?\n/).filter(Boolean);
+        if (lines.length < 2) continue;
+        const [timeLine, ...textLines] = lines;
+        const match = timeLine.match(/^(\d+:\d{2}:\d{2}\.\d{3}),(\d+:\d{2}:\d{2}\.\d{3})$/);
+        if (!match) throw new Error('Invalid SBV timestamp: ' + timeLine);
+        const start = formatSbvTime(match[1]);
+        const end = formatSbvTime(match[2]);
+        srt += `${idx}\n${start} --> ${end}\n${textLines.join('\n')}\n\n`;
+        idx++;
+      }
+      if (!srt) throw new Error('No valid SBV blocks found.');
+      return srt.trim();
+    }
+
+    function formatSbvTime(sbvTime) {
+      // SBV: H:MM:SS.mmm
+      const parts = sbvTime.split(/[:.]/);
+      let [h, m, s, ms] = parts;
+      h = h.padStart(2, '0');
+      m = m.padStart(2, '0');
+      s = s.padStart(2, '0');
+      ms = ms.padEnd(3, '0');
+      return `${h}:${m}:${s},${ms}`;
+    }
+  </script>
+</body>
+</html>
